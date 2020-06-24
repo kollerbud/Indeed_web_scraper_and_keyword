@@ -45,7 +45,7 @@ def get_bsobj(page_num, job_word_query='supply chain'):
 
     return df
 
-conn =sqlite3.connect('file:C:\\Users\\Li\\Desktop\\job_posts\\scrap_results.db?mode=rw', uri=True)
+conn =sqlite3.connect('file:C:\~\\scrap_results.db?mode=rw', uri=True)
 
 df_2 =pd.DataFrame(columns=['job_title', 'job_link','company', 'location', 'company_rating', 'post_time', 'scrape_time', 'keyword'])
 
