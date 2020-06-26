@@ -27,7 +27,7 @@ def get_bsobj(page_num, job_word_query='supply chain'):
         except:
             company=None
         try:
-            location =post.find('span', class_='location').text
+            location =post.find('span', attrs={'class':'location accessible-contrast-color-location'}).text
         except:
             location =None
         try:
@@ -45,7 +45,6 @@ def get_bsobj(page_num, job_word_query='supply chain'):
 
     return df
 
-conn =sqlite3.connect('file:C:\~\\scrap_results.db?mode=rw', uri=True)
 
 df_2 =pd.DataFrame(columns=['job_title', 'job_link','company', 'location', 'company_rating', 'post_time', 'scrape_time', 'keyword'])
 
@@ -60,7 +59,10 @@ for q in ['supply chain','supply chain engineer', 'supply chain analyst', 'suppl
         df_2=pd.concat([df_2,df_1], ignore_index=True, axis=0)
 
 
+
 df_2=df_2.drop_duplicates(subset=['job_link', 'job_title', 'company'], keep='first')
+
+conn =sqlite3.connect('file:C:\~\\scrap_results.db?mode=rw', uri=True)
 df_2.to_sql('scrap_results', con=conn, if_exists='append', index=False)
 conn.commit()
 conn.close()
