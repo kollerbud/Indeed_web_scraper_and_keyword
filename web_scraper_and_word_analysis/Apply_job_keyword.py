@@ -5,9 +5,10 @@ import pandas as pd
 import random
 from nltk import word_tokenize, Text, FreqDist, pos_tag, ngrams
 from nltk.corpus import stopwords
+import sqlite3
 
 
-def get_job_posting_text(link):
+def job_post_text(link):
     description = []
     base_url =r'https://www.indeed.com'
     headers ={'Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.10136'}
@@ -33,10 +34,6 @@ def get_job_posting_text(link):
     description =description.lower()
     return ''.join(description)
 
-#example block
-#y=get_job_posting_text('/viewjob?jk=bc4ead5d0641cc93&from=serp&vjs=3')
-y =get_job_posting_text('/viewjob?jk=5dfbe256a2be38eb&from=serp&vjs=3')
-
 
 def text_analyzer(text, top_most_common=10):
     token =Text(word_tokenize(text))
@@ -52,9 +49,12 @@ def text_analyzer(text, top_most_common=10):
     nouns =[n[0] for n in tokens if n[1] in ['NN','NNS','NNP', 'NNPS']]
     freq_nouns =FreqDist(nouns).most_common(top_most_common)
 
-    bi_grams =FreqDist(ngrams(token,2)).most_common(top_most_common)
+    bi_grams =list(ngrams(token,2))
 
-    return freq_verbs, freq_nouns, bi_grams, token
+
+    freq_bi_grams =FreqDist(ngrams(token,2)).most_common(top_most_common)
+
+    return freq_verbs, freq_nouns,freq_bi_grams, bi_grams, token
 
 def resume_analyzer():
     resume_text =str('''
@@ -88,25 +88,62 @@ CSCP
     resume_token =Text(word_tokenize(resume_text))
     stopwords_en =set(stopwords.words('english'))
     resume_token =[word for word in resume_token if word.isalpha()]
-    resume_token =[word for word in resume_token if word not in stopwords_en]    
+    resume_token =[word for word in resume_token if word not in stopwords_en]
 
-    return resume_token
-    
+    resume_token_bi_gram =list(ngrams(resume_token,2))
+
+    return resume_token, resume_token_bi_gram
+
     
 def comparison(job_post, resume):
-    mono_cross_word =set(job_post).intersection(set(resume))
-    bi_cross_word = 
-    return mono_cross_word
+    #job_post is for text analyzer
+    mono_cross_word =set(job_post[4]).intersection(set(resume[0]))
+    percent_match =str(round(len(mono_cross_word)/len(job_post[4])*100,2))
+    bi_gram_cross=[]
+    for i in job_post[3]:
+        for j in resume[1]:
+            if i==j:
+                bi_gram_cross.append(j)
+    bi_gram_cross =set(bi_gram_cross)
 
 
-print(comparison(text_analyzer(y)[3], resume_analyzer()))
+    return percent_match , bi_gram_cross
 
 
 
 
 
-            
+conn =sqlite3.connect('file:C:\\Users\\Li\\Desktop\\job_posts\\scrap_results.db?mode=rw', uri=True)
+c=conn.cursor()
+c.execute('SELECT job_title, company, job_link FROM scrap_results WHERE scrape_time >= "20-07-01"')
+y =c.fetchall()
 
 
+for row in y:
+    wait =random.gauss(10,1)
+    print(wait)
+    time.sleep(wait)
+    
+    k =comparison(text_analyzer(job_post_text(row[2])), resume_analyzer())
+    c.execute('UPDATE scrap_results SET number_of_match=? WHERE job_title =? AND company =?', (k[0],row[0], row[1]))
+    conn.commit()
 
     
+
+
+
+
+"""
+To do list:
+-Add documentation for all functions
+-comparison for-loop, faster way to do this?
+-text_analyzer and resume_analyzer, possible to combine to optimize code speed?
+--possible to combine into class
+-possible utilization case for Word2vec
+--ref: https://www.kaggle.com/pierremegret/gensim-word2vec-tutorial
+
+
+c.execute('UPDATE scrap_results SET top_key_word="test2", number_of_match="6" WHERE job_title="Strategic Sourcing Engineer" AND company="Honeywell"')
+
+
+"""
