@@ -118,17 +118,18 @@ c=conn.cursor()
 c.execute('SELECT job_title, company, job_link FROM scrap_results WHERE scrape_time >= "20-07-01"')
 y =c.fetchall()
 
-
+'''
+query_count=0
 for row in y:
     wait =random.gauss(10,1)
-    print(wait)
     time.sleep(wait)
     
     k =comparison(text_analyzer(job_post_text(row[2])), resume_analyzer())
     c.execute('UPDATE scrap_results SET number_of_match=? WHERE job_title =? AND company =?', (k[0],row[0], row[1]))
+    print(f'{query_count} updated')
     conn.commit()
-
-    
+    query_count +=1
+'''
 
 
 
