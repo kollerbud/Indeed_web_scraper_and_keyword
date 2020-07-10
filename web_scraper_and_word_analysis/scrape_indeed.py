@@ -4,12 +4,14 @@ import time
 import pandas as pd
 import random
 import sqlite3
-
+import Apply_job_keyword as apply
 def get_bsobj(page_num, job_word_query='supply chain'):
     job_word_query =job_word_query.replace(' ', '+')
     base_url =f'https://www.indeed.com/jobs?q={job_word_query}&jt=fulltime&sort=date&limit=50&fromage=15&radius=25&start={page_num}'
-    browser_header ={'Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.10136'}
-    web_page =req.get(base_url, {'User-Agent':browser_header})
+    browser_header ={'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:78.0) Gecko/20100101 Firefox/78.0'
+    
+    }
+    web_page =req.get(base_url, {'User-Agent':browser_header}, timeout=10)
     print(web_page.status_code)
 
     df =pd.DataFrame(columns=['job_title', 'job_link','company', 'location', 'company_rating', 'post_time', 'scrape_time', 'keyword'])
@@ -41,32 +43,57 @@ def get_bsobj(page_num, job_word_query='supply chain'):
         
 
         df=df.append({'job_title':job['title'], 'job_link':job['href'], 'company':company, 'location':location,
-        'company_rating':company_rating, 'post_time':post_time, 'scrape_time':time.strftime('%y-%m-%d'), 'keyword':job_word_query.replace('+', ' ')}, ignore_index=True)
+        'company_rating':company_rating, 'post_time':post_time, 'scrape_time':time.strftime('%y-%m-%d'), 'keyword':job_word_query.replace('+', ' '), 'number_of_match':None}, ignore_index=True)
 
     return df
 
 
-df_2 =pd.DataFrame(columns=['job_title', 'job_link','company', 'location', 'company_rating', 'post_time', 'scrape_time', 'keyword'])
-
+df_2 =pd.DataFrame(columns=['job_title', 'job_link','company', 'location', 'company_rating', 'post_time', 'scrape_time', 'keyword', 'number_of_match'])
+today =time.strftime('%Y-%m-%d')
 for q in ['supply chain','supply chain engineer', 'supply chain analyst', 'supply chain intelligence']:
     for x in range(0,2000,50):
         #wait =2
-        wait=int(random.gauss(25,5))
+        wait=int(random.gauss(9,2))
         time.sleep(wait)
         print(f'x: {x} query word: {q} wait time {wait}')
         df_1 =get_bsobj(x,q)
         df_1=df_1.drop_duplicates(subset=['job_link', 'job_title', 'company'], keep='first')
         df_2=pd.concat([df_2,df_1], ignore_index=True, axis=0)
+df_2=df_2.drop_duplicates(subset=['job_title', 'company'], keep='first')
+df_2.to_csv(f'C:\\Users\\Li\Desktop\\job_posts\\{today}_.csv', index_col=False)
+
+'''
+#save scrape results just in case program got interrupted
+today =time.strftime('%Y-%m-%d')
+df_2.to_csv(f'C:\\Users\\Li\Desktop\\job_posts\\{today}.csv')
+'''
+'''
+########psudo value to test#############
+today =time.strftime('%Y-%m-%d')
+df_2 =pd.read_csv(f'C:\\Users\\Li\Desktop\\job_posts\\{today}.csv', index_col=False)
+
+#df_2 =df_test[:10]
+#############################
+df_2=df_2.drop_duplicates(subset=['job_title', 'company'], keep='first')
+print(f'{len(df_2)} links to go through')
+'''
 
 
+df_2 =pd.read_csv(f'C:\\Users\\Li\Desktop\\job_posts\\{today}.csv', index_col=False)
+print(f'{len(df_2)} links to go through')
+for counter, link in enumerate(df_2['job_link']):
+        wait=int(random.gauss(6,1))
+        time.sleep(wait)
+        k =apply.comparison(apply.text_analyzer(apply.job_post_text(link)), apply.resume_analyzer())
+        df_2.loc[counter, 'number_of_match'] =k
+        print(f'counter {counter}, k {k}')
+        
+        if counter % 100 ==0 and counter >0:
+            df_2.loc[counter-99:counter].to_csv(f'C:\\Users\\Li\Desktop\\job_posts\\{today}_{str(counter)}.csv', index=False)
+            print(f'{counter-99} to {counter} csv made')
 
-df_2=df_2.drop_duplicates(subset=['job_link', 'job_title', 'company'], keep='first')
 
-conn =sqlite3.connect('file:C:\~\\scrap_results.db?mode=rw', uri=True)
+conn =sqlite3.connect('file:C:\\Users\\Li\\Desktop\\job_posts\\scrap_results.db?mode=rw', uri=True)
 df_2.to_sql('scrap_results', con=conn, if_exists='append', index=False)
 conn.commit()
 conn.close()
-
-
-print('change')
-

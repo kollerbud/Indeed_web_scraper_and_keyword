@@ -10,7 +10,7 @@ import sqlite3
 
 def job_post_text(link):
     description = []
-    base_url =r'https://www.indeed.com'
+    base_url ='https://www.indeed.com'
     headers ={'Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.10136'}
     try:
         r =req.get(base_url + link, {'User-Agent':headers}, timeout=5)
@@ -98,43 +98,48 @@ CSCP
 def comparison(job_post, resume):
     #job_post is for text analyzer
     mono_cross_word =set(job_post[4]).intersection(set(resume[0]))
-    percent_match =str(round(len(mono_cross_word)/len(job_post[4])*100,2))
-    bi_gram_cross=[]
-    for i in job_post[3]:
-        for j in resume[1]:
-            if i==j:
-                bi_gram_cross.append(j)
-    bi_gram_cross =set(bi_gram_cross)
+
+    if len(job_post[4])>0:
+        percent_match =str(round(len(mono_cross_word)/len(job_post[4])*100,2))
+    else:
+        percent_match =0
+        
+
+    return percent_match
+
+post_link ='/company/Chesapeake-Spice-Company/jobs/Food-Safety-Coordinator-092935c24ec5576b?fccid=230a762d54c2cc66&vjs=3'
+k=comparison(text_analyzer(job_post_text(post_link)), resume_analyzer())
+print(k)
 
 
-    return percent_match , bi_gram_cross
 
 
+if __name__ =='main':
+    pass
 
 
-
-conn =sqlite3.connect('file:C:\\Users\\Li\\Desktop\\job_posts\\scrap_results.db?mode=rw', uri=True)
-c=conn.cursor()
-c.execute('SELECT job_title, company, job_link FROM scrap_results WHERE scrape_time >= "20-07-01"')
-y =c.fetchall()
-
-'''
-query_count=0
-for row in y:
-    wait =random.gauss(10,1)
-    time.sleep(wait)
+'''    
+#######################################
+    conn =sqlite3.connect('file:C:\\Users\\Li\\Desktop\\job_posts\\scrap_results.db?mode=rw', uri=True)
+    c=conn.cursor()
+    c.execute('SELECT job_title, company, job_link FROM scrap_results WHERE scrape_time > "20-07-04"')
+    y =c.fetchall()
+    print(len(y))
+    query_count=0
+    for row in y:
+        wait =random.gauss(5,0.5)
+        time.sleep(wait)
     
-    k =comparison(text_analyzer(job_post_text(row[2])), resume_analyzer())
-    c.execute('UPDATE scrap_results SET number_of_match=? WHERE job_title =? AND company =?', (k[0],row[0], row[1]))
-    print(f'{query_count} updated')
-    conn.commit()
-    query_count +=1
+        k =comparison(text_analyzer(job_post_text(row[2])), resume_analyzer())
+        c.execute('UPDATE scrap_results SET number_of_match=? WHERE job_title =? AND company =?', (k,row[0], row[1]))
+        print(f'{query_count} updated')
+        conn.commit()
+        query_count +=1
+    
+
+#######################################
 '''
-
-
-
-
-"""
+'''
 To do list:
 -Add documentation for all functions
 -comparison for-loop, faster way to do this?
@@ -146,5 +151,4 @@ To do list:
 
 c.execute('UPDATE scrap_results SET top_key_word="test2", number_of_match="6" WHERE job_title="Strategic Sourcing Engineer" AND company="Honeywell"')
 
-
-"""
+'''
