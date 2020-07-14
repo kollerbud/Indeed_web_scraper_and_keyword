@@ -15,23 +15,32 @@ def job_post_text(link):
     try:
         r =req.get(base_url + link, {'User-Agent':headers}, timeout=5)
         bsobj =soup(r.content, 'html.parser')
+        
+        for tags in bsobj.find_all('div', {'id': 'jobDescriptionText'}):
+            for litag in tags.find_all('li'):
+                description.append(litag.text)
+        
+        if len(description)==0:
+            for d in bsobj.find_all('div', {'id':'jobDescriptionText'}):
+                description =d.text
+                description.replace('\n', '')
+        
+        description =''.join(description)
+        description =description.lower()
+
     except req.exceptions.ConnectionError as e:
-        print(req.status_codes, e)
+        print('connection error')
+        description =['connection error']
+        pass
+    except req.ConnectionError:
+        pass
+
     except TypeError:
         print('watch out for "/"')
-
-    for tags in bsobj.find_all('div', {'id': 'jobDescriptionText'}):
-        for litag in tags.find_all('li'):
-            description.append(litag.text)
-
     
-    if len(description)==0:
-        for d in bsobj.find_all('div', {'id':'jobDescriptionText'}):
-            description =d.text
-            description.replace('\n', '')
-    
-    description =''.join(description)
-    description =description.lower()
+
+
+
     return ''.join(description)
 
 
@@ -107,15 +116,16 @@ def comparison(job_post, resume):
 
     return percent_match
 
-post_link ='/company/Chesapeake-Spice-Company/jobs/Food-Safety-Coordinator-092935c24ec5576b?fccid=230a762d54c2cc66&vjs=3'
-k=comparison(text_analyzer(job_post_text(post_link)), resume_analyzer())
-print(k)
 
 
 
+if __name__ =='__main__':
+    post_link ='www'
+    k=comparison(text_analyzer(job_post_text(post_link)), resume_analyzer())
+    
+    print(k)
+    
 
-if __name__ =='main':
-    pass
 
 
 '''    
